@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Austin Code Dept Live Complaint Map</title>
+<link rel="stylesheet" href="./css/leaflet.css" />
+<link rel="stylesheet" href="./css/MarkerCluster.Default.css"/>
+<link rel="stylesheet" href="./css/MarkerCluster.css" />
+<link rel="stylesheet" href="./css/leaflet-sidebar.min.css"/>
+<link rel="stylesheet" href="./css/leaflet.label.css" />
+<link rel="stylesheet" href="./css/style.css"/>
+<link rel="stylesheet" href="./css/jquery-ui.css"/>
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+<script src="./js/leaflet.js"></script>
+<script src="./js/jquery-ui.js"></script>
+<script src="./js/jquery1.11.1.js"></script>
+<script src="./js/leaflet.markercluster-src.js"></script>
+<script src="./js/leaflet-sidebar.js"></script>
+<script src="./js/leaflet.label.js"></script>
+<script src="http://cdn-geoweb.s3.amazonaws.com/esri-leaflet/1.0.0-rc.4/esri-leaflet-feature-layer.js"></script><!-- Feature Layer Only Plugin -->
+<script src="http://cdn-geoweb.s3.amazonaws.com/esri-leaflet-clustered-feature-layer/1.0.0-rc.2/esri-leaflet-clustered-feature-layer.js"></script>
+
+</head>
+<body>
+	<div id="sidebar" class="sidebar collapsed">
+		<!-- Nav tabs -->
+		<ul class="sidebar-tabs" role="tablist">
+			<li><a href="#home" role="tab"><i class="fa fa-bars"></i></a></li>
+			<li><a href="#about" role="tab"><i class="fa fa-info"></i></a></li>
+		</ul>
+		<div class="sidebar-content active">
+		<!-- Tab panes -->
+			<img class=logo src="Internal Logo.jpg" alt="Code Dept Logo">
+			<div class="sidebar-pane" id="home">
+				<div class = "filter-area">
+					<p style="font-size: larger">
+						<span class="custom-dropdown custom-dropdown--john">
+							<select name="District Filter" id=District class="custom-dropdown__select custom-dropdown__select--john filter">  //these IDs must match the json property you're trying to filter!
+								<option value="">District</option>
+							</select>
+						</span>
+						</br>
+						</br>
+						<span class="custom-dropdown custom-dropdown--john">
+							<select name="Type Filter" id=Type class="custom-dropdown__select custom-dropdown__select--john filter">
+								<option value="">Type</option>
+							</select>
+						</span>
+						</br>
+						</br>
+						<span class="custom-dropdown custom-dropdown--john">
+							<select name="Inspector Filter" id=Officer class="custom-dropdown__select custom-dropdown__select--john filter">
+								<option value="">Inspector</option>
+							</select>
+						</span>
+						</br>
+						</br>
+						<span class="custom-dropdown custom-dropdown--john">
+							<select name="Status Filter" id=Status class="custom-dropdown__select custom-dropdown__select--john filter">
+								<option value="">Status</option>
+							</select>
+						</span>
+						</br>
+						</br>
+						<span class="custom-dropdown custom-dropdown--john">
+							<select name="Violation Filter" id=Primary_Reported_Violation class="custom-dropdown__select custom-dropdown__select--john filter">
+								<option value="">Violation</option>
+							</select>
+						</span>
+						</br>
+						</br>
+						<span class="custom-dropdown custom-dropdown--john">
+							<select name="Priority Filter" id=Priority class="custom-dropdown__select custom-dropdown__select--john filter">
+								<option value="">Priority</option>
+							</select>
+						</span>
+						</br>
+						</br>
+							<input class="search-box filter" type="text" id=Case_Number value="" placeholder="Case #" title="Search by case number" for="tags">
+						</br>
+						</br>
+							<input class="search-box filter" type="text" id=Location value="" placeholder="Address" title="Search by case address">
+						</br>
+						</br>
+						<b>Open Date:</b> </br>
+						<span class="custom-dropdown custom-dropdown--john">
+							<select style="width: 90px; font-size: smaller" id=Open_Date_Before_After class="custom-dropdown__select custom-dropdown__select--john">
+								<option value="after">After</option>
+								<option value="before">Before</option>
+							</select>
+						</span>
+						<input style="width: 70px; font-size: smaller" type="text" id=Open_Date class="search-box filter datepicker" placeholder="D/M/YYYY">
+						</br>
+						</br>
+							<b>Last Updated:</b> </br>
+						<span class="custom-dropdown custom-dropdown--john">
+							<select style="width: 90px; font-size: smaller" id=Date_Updated_Before_After class="custom-dropdown__select custom-dropdown__select--john">
+								<option value="after">After</option>
+								<option value="before">Before</option>
+							</select>
+						</span>
+						<input style="width: 70px; font-size: smaller" type="text" id=Date_Updated class="search-box filter datepicker" placeholder="D/M/YYYY">
+						</br>
+						</br>
+						<button id=applyFilterButton>Apply Filter</button>
+						</br>
+						</br>
+						<button id =removeFilterButton>Remove Filter</button>
+					</p>
+					<p class=results></p>
+				</div>
+			</div>
+			<div class="sidebar-pane" id="about"><h1>About</h1>
+				<p class=homePanel>Click on any complaint cluster to view detailed complaint locations for that area.</p>
+				<p class=homePanel>Click on any complaint marker to retrieve case information for the complaint.</p>
+				<p class=homePanel>This product is for informational purposes and may not have been prepared for or be suitable for legal, engineering, or surveying purposes. It does not represent an on-the-ground survey and represents only the approximate relative location of property boundaries. This product has been produced by the Code Department for the sole purpose of geographic reference. No warranty is made by the City of Austin regarding specific accuracy or completeness.</p>
+				<p class=homePanel>Prepared by J. Clary on 12/9/2014</p>
+			</div>
+		</div>
+	</div>
+	<div id="map" class="sidebar-map" syle="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+	<div id="loader">
+		<h1 >Loading data...</h1>
+	</div>
+</body>
+<script src="./js/complaintMap.js"></script> 
+</html>
