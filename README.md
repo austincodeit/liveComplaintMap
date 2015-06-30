@@ -2,6 +2,6 @@
 Austin Code Live Complaint Map Application
 
 View this live (in all it's broken glory):
-http://coacode.coacd.org/%5CliveComplaintMap
+http://coacode.coacd.org/liveComplaintMap
 
 Note: Must be on COACD domain to view.
