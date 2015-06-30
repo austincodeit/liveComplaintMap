@@ -2,18 +2,18 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-<title>Austin Code Dept Live Complaint Map</title>
-<link rel="stylesheet" href="./css/leaflet.css" />
+<title>Austin Code Dept Live Complaint Map!</title>
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
 <link rel="stylesheet" href="./css/MarkerCluster.Default.css"/>
 <link rel="stylesheet" href="./css/MarkerCluster.css" />
 <link rel="stylesheet" href="./css/leaflet-sidebar.min.css"/>
 <link rel="stylesheet" href="./css/leaflet.label.css" />
 <link rel="stylesheet" href="./css/style.css"/>
 <link rel="stylesheet" href="./css/jquery-ui.css"/>
-<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
 <script src="./js/leaflet.js"></script>
-<script src="./js/jquery-ui.js"></script>
 <script src="./js/jquery1.11.1.js"></script>
+<script src="./js/jquery-ui.js"></script>
 <script src="./js/leaflet.markercluster-src.js"></script>
 <script src="./js/leaflet-sidebar.js"></script>
 <script src="./js/leaflet.label.js"></script>
@@ -42,14 +42,14 @@
 						</br>
 						</br>
 						<span class="custom-dropdown custom-dropdown--john">
-							<select name="Type Filter" id=Type class="custom-dropdown__select custom-dropdown__select--john filter">
+							<select name="Type Filter" id=type class="custom-dropdown__select custom-dropdown__select--john filter">
 								<option value="">Type</option>
 							</select>
 						</span>
 						</br>
 						</br>
 						<span class="custom-dropdown custom-dropdown--john">
-							<select name="Inspector Filter" id=Officer class="custom-dropdown__select custom-dropdown__select--john filter">
+							<select name="Inspector Filter" id=case_manager class="custom-dropdown__select custom-dropdown__select--john filter">
 								<option value="">Inspector</option>
 							</select>
 						</span>
@@ -63,7 +63,7 @@
 						</br>
 						</br>
 						<span class="custom-dropdown custom-dropdown--john">
-							<select name="Violation Filter" id=Primary_Reported_Violation class="custom-dropdown__select custom-dropdown__select--john filter">
+							<select name="Violation Filter" id=description class="custom-dropdown__select custom-dropdown__select--john filter">
 								<option value="">Violation</option>
 							</select>
 						</span>
@@ -76,10 +76,10 @@
 						</span>
 						</br>
 						</br>
-							<input class="search-box filter" type="text" id=Case_Number value="" placeholder="Case #" title="Search by case number" for="tags">
+							<input class="search-box filter" type="text" id=case_id value="" placeholder="Case #" title="Search by case number" for="tags">
 						</br>
 						</br>
-							<input class="search-box filter" type="text" id=Location value="" placeholder="Address" title="Search by case address">
+							<input class="search-box filter" type="text" id=address value="" placeholder="Address" title="Search by case address">
 						</br>
 						</br>
 						<b>Open Date:</b> </br>
@@ -123,5 +123,5 @@
 		<h1 >Loading data...</h1>
 	</div>
 </body>
-<script src="./js/complaintMap.js"></script> 
+<script src="./js/liveComplaintMap.js"></script> 
 </html>
