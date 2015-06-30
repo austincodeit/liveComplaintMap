@@ -1,4 +1,12 @@
 // WISH LIST/TO DO-----------------------------------------------|
+//getting closer!
+//menus need to update after filter apply
+//remove filter not work
+//i have not mapped the date  filters  at all!
+//slowly migrating to a list of object for the filters rather than an array of names...some functions may be need to beupdated wherever you see "filterList"
+//use dev version of leaflet (.8) so taht you can add marker properties (see: 	http://stackoverflow.com/questions/17423261/how-to-pass-data-with-marker-in-leaflet-js
+//create filter DOMs programmitcaly from filter list? that would be cool.
+//and why not use dictionaries instead of arrays for the filters?
 //1. fix date filter
 //2. remove duplicate officer names
 //3. errors out if no results returned
@@ -24,24 +32,19 @@
 //backend: query feature service based on filter
 
 //globals------------------------------------------------------------|
-var 	districtList = [],
-		zoneList = [],
-		inspectorList = [],
-		statusList = [],
-		violationList = []
-		priorityList = [],
-		caseList = [],
-		locationList = [],
-		dateUpdated = [],
-		openDate = [];
-var featureProperties = {};
-featureProperties["features"] = [];   //skeleton for filter feature data
-		
-var	filterList = ["District","Type","Officer","Status","Primary_Reported_Violation", "Priority", "Case_Number", "Location", "Date_Updated", "Open_Date"], //strings much match JSON feature properties keys and filter ID
-		filterArray = [districtList, zoneList, inspectorList, statusList, violationList, priorityList, caseList, locationList, dateUpdated, openDate], //should replicate the order of filterList array 
-		activeFilters = [];  //an array of all filters that are currently applied
+var	inspectorList = [], caseList = [], locationList = [], violationList = [];
 
-var	compareValue,
+		
+var	activeFilters = [];  //an array of all filters that are currently applied
+
+var filterList = [
+				{"filterName":"Officer","fieldName":"case_manager", "filterStyle": "dropDown", "uniqueValues": inspectorList, "filterType": "text"},
+				{"filterName":"Case #","fieldName":"case_id", "filterStyle": "searchBox","uniqueValues": caseList,"filterType": "text"}, 
+				{"filterName":"Location","fieldName":"address", "filterStyle": "searcBox","uniqueValues": locationList,"filterType": "text"},
+				{"filterName":"Violation Type","fieldName":"description", "filterStyle": "dropDown","uniqueValues": violationList,"filterType": "text"}]
+
+var	data,
+		compareValue,
 		selection,
 		amandaService,
 		makers,
@@ -56,12 +59,9 @@ var	compareValue,
 		featureCount,
 		tempJson; //can you avoid any of these globals?
 
-var  applyRemove = 2; //on initial load, point the filters to the baseline data set (applyRemove = 2)
+var filteredData = [];
 
-var json = {
-		"type": "FeatureCollection",
-		"features": []
-	}
+var  applyRemove = 2; //on initial load, point the filters to the baseline data set (applyRemove = 2)
 
 var codeDistrictLayerStyle = {
     "color": "black",
@@ -116,10 +116,8 @@ map.on('popupopen', function(centerMarker) {
 
 //apply filters
 $("#applyFilterButton").click(function(){
-
 	applyRemove = 1;
 	displayLoader(1);
-
 }); //end filter button function
 
 //remove filters
@@ -141,27 +139,32 @@ $(".filter").change(function(){ //change filter color when option changes
 
 function activateAutocomplete() {
 	$(function() {
-		$( "#Case_Number" ).autocomplete({ source: filterArray[6] })
+		$( "#case_id" ).autocomplete({ source: filterList[1]["uniqueValues"] })
 	})
 }
 
 function retrieveFeatures() {
-	var url = "http://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/amandaComplaintFeatures6/FeatureServer/0/"
-	console.log("retrieveFeatures from AGOL");
-	amandaService = L.esri.Services.featureLayer(url) //instantiate service
-	amandaService.query().run(function(error, featureCollection){
-		featureCount = featureCollection.features.length;
-		json = featureCollection
+	(function () {
+		var districtLines = null;
+		$.ajax({
+			'async': false,
+			'global': false,
+			'url': 'https://data.austintexas.gov/resource/6wtj-zbtb.json?$where=closed_date IS NULL&$limit=10000',
+			'dataType': "json",
+			'success': function (d) {
+				data = d;
+			}
+		});
 		loadMapData();
-	});
+	})(); 
 }//end retrieveFeatures
 
 function loadMapData(){  //runs once when map loads
 	sideBar();
 	initializeLayers();
-	drawLayers();
+	createMarkerLayer(data);
 	addLayerControls();
-	getUniques(json); //GET UNIQUE JSON VALUES...
+	getUniques(data); //GET UNIQUE JSON VALUES...
 	removeLoader();
 }
 
@@ -182,8 +185,8 @@ function displayLoader(value){
 function removeLoader(){
 	$("#loader").fadeOut("slow", function(){
 		if (applyRemove == 1) {
-			showResults(amandaFeatures); //Display number of features in results area
-		}	else { showResults(baselineAmandaFeatures); //Display number of features in results area
+			showResults(filteredData); //Display number of features in results area
+		}	else { showResults(data); //Display number of features in results area
 		}
 	}); //remove loading screen
 	
@@ -226,25 +229,27 @@ function initializeLayers() {
 										layer.bindLabel("<b>" + feature.properties.DISTRICT + "</b>", { noHide: true });
 									}
 	});
-	baselineAmandaFeatures = L.geoJson(json, {
-								onEachFeature: function (feature, layer) {
-									lon = String(feature.geometry.coordinates[0])  //grab the geometry, not the property, which has a variable spatial reference
-									lon = lon.substring(0,9)
-									lat = String(feature.geometry.coordinates[1]) 
-									lat = lat.substring(0,8)
-									layer.bindPopup("<div style='font-size: larger'><b>" + feature.properties.Location + "</b></div><b> Case #: </b>" + feature.properties.Case_Number + "</br><b> District: </b>" + feature.properties.District + "</br> <b>Inspector: </b>" + feature.properties.Officer +  "</br><b> Violation: </b>" + feature.properties.Primary_Reported_Violation + "</br></br><img src='https://maps.googleapis.com/maps/api/streetview?size=250x250&location=" + lat + "," + lon + "'/>");
-									
-									layer.bindLabel("<b>" + feature.properties.Location + "</b>");
-								}
-	});
-	//Create marker cluster layer
-	markers = L.markerClusterGroup();
-	markers = new L.MarkerClusterGroup({ showCoverageOnHover: false, spiderfyOnMaxZoom: true});
+
 }  //end initializeLayers
 
-function drawLayers(){
-	markers.addLayer(baselineAmandaFeatures);
-	markers.addTo(map) //show complaint locations by default
+function createMarkerLayer(jsonObj){
+	markers = new L.MarkerClusterGroup({ showCoverageOnHover: false, spiderfyOnMaxZoom: true});
+	for (var i = 0; i < jsonObj.length; i++) {
+		if (jsonObj[i].latitude) {
+			var lat = jsonObj[i].latitude;
+			var lon = jsonObj[i].longitude;
+			var caseId = jsonObj[i].case_id
+			var marker = new L.marker([lat, lon]).bindPopup(caseId);
+		}
+		markers.addLayer(marker);
+		if (i==jsonObj.length-1) {
+			drawLayers(markers);
+		};
+	};
+} //end createMarkerLayer
+
+function drawLayers(layer){
+	layer.addTo(map) //show complaint locations by default
 }
 
 function addLayerControls(){
@@ -265,26 +270,23 @@ function addLayerControls(){
 
 function updateFilters() {  //add 'activated' filters to activeFilters
 	for (var i = 0; i < filterList.length; i++) { //for every filter 
-		var currentFilter = []
-		var filterType = filterList[i];
-		var filterValue = $("#" + filterType).val()  //get filter type and value for the filter
+		var filterId = filterList[i]["fieldName"];
+		var filterValue = $("#" + filterId).val()  //get filter type and value for the filter
 		var dateSelctionType = "";
 		//you need to check to make sure that the filter type//value is not in active filter before you push it!<<<<<<<BUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUGBUG
 		if (filterValue != "") { //if the filter value is not empty (it's active)
-			if (filterList[i] == "Open_Date" || filterList[i] == "Date_Updated") { //if the filter is a date filter
-				filterValue = new Date(filterValue).getTime(); //convert m/d/yyyy to epoch format
-				dateSelctionType = $("#" + filterList[i] + "_Before_After").val(); //get the before or after setting
+			if (filterList[i]["filterType"] == "date") { //if the filter is a date filter
+				filterList[i]["filterValue"] = new Date(filterValue).getTime(); //convert m/d/yyyy to epoch format
+				dateSelctionType = $("#" + filterList[i]["fieldName"] + "_Before_After").val(); //get the before or after setting
+				filterList[i]["dateSelctionType"] = dateSelctionType;
+			} else {
+				filterList[i]["filterValue"] = filterValue; //add the filter value that the user has selected into the filter list as the filterValue
 			}
-			currentFilter.push(filterType);  //add filter ID and value to temp array
-			currentFilter.push(filterValue);
-			if (dateSelctionType) {
-				currentFilter.push(dateSelctionType); //add before or after setting to filter array if it exists
-			}
-			activeFilters.push(currentFilter); //send filter ID and value as array to global active filter array
+			activeFilters.push(filterList[i]); //send filter object to the global active filter array
 		} else {  //check to see if an active filter has been changed to null
-			for (var q = 0; q < activeFilters.length; q++) {	
-				if (activeFilters[q].indexOf(filterType) >= 0) {
-					activeFilters.splice(q, 1);
+			for (var q = 0; q < activeFilters.length; q++) { //for all the active filters
+				if (activeFilters[q]["fieldName"].indexOf(filterId) >= 0) { //if the filter is on the active filter, it should be removed
+					activeFilters.splice(q, 1); //remove it!
 					break;
 				};
 			};
@@ -295,10 +297,10 @@ function updateFilters() {  //add 'activated' filters to activeFilters
 
 function applyFilters() {
 	//refresh vars
-	featureProperties.features = []; //clear featureProperties
+	filteredData = [];
 	map.removeLayer(markers); //remove 'old' version of layer and refresh layers
 	markers = new L.MarkerClusterGroup({ showCoverageOnHover: false, spiderfyOnMaxZoom: true});
-	createAmandaFeatures(json)
+	filterAmandaFeatures(data)
 } //end applyFilters 
 
 function removeFilters() {
@@ -306,96 +308,79 @@ function removeFilters() {
 	$('.search-box').val("")  //clear the search box values
 	$('select').prop("selectedIndex",0) //set all select menus to the first option in the drop-down  ///<<<made redundant by updateMenus() ?
 	activeFilters = []  //reset list of activeFilters - charts tab is based on this data
-	markers.addLayer(baselineAmandaFeatures); //add new layer to marker layer
-	markers.addTo(map);	//add marker layer to map
+	//insert function to draw layer
 	updateLayerControls();  //refresh layer controls
-	removeHighlights();	
+	removeHighlights();
+	removeLoader();
 } //end removeFilters
 
-function createAmandaFeatures(jsonObj){
-	amandaFeatures = L.geoJson(jsonObj, {
-			filter: function(feature, layer) {
-				var keepTruckin = true;
-				for (var i = 0; i < activeFilters.length; i++) { //for every filter in the apply filter array
-					var currentFilterValue = activeFilters[i][1] //the value of the filter selection
-					var featureValue = feature.properties[activeFilters[i][0]]; //the feature's property value against which to check the filter
-					if (typeof(currentFilterValue) == "string") {
-						currentFilterValue = currentFilterValue.toUpperCase();  //this allows non-case sensitive search for text inputs....could add a conditional to only do this if the filter's class = search-box....
-					}
-					if (typeof(featureValue) == "string") {
-						featureValue = featureValue.toUpperCase();
-					}
-					if (featureValue != null) { //if the featureValue is not null
-						
-						//if it is a date...do this
-						if (activeFilters[i][0] == "Open_Date" || activeFilters[i][0] == "Date_Updated") { //if the filter is a date filter
-							if (activeFilters[i][2] == "after") { //if the selector is set to after
-								if (featureValue > currentFilterValue){ //if the current feature value is larger (i.e. more recent) than the filter value
-									keepTruckin = true; //keep truckin'
-								}
-								else {
-									keepTruckin = false;
-									break;
-								}
-							}
-							else {
-								if (activeFilters[i][2] == "before") { //if the selector is set to after
-									if (featureValue < currentFilterValue){ //if the current feature value is larger (i.e. more recent) than the filter value
-										keepTruckin = true; //keep truckin'
-									} else {
-										keepTruckin = false;
-										break;
-									}
-								}
-							}
+function filterAmandaFeatures(jsonObj){
+	//see old version, fix!
+	for (var i = 0; i < data.length; i++){ //for every feature
+		var keepTruckin = false;
+		for (var q = 0; q < activeFilters.length; q++) { //for every filter in the apply filter array
+			var currentFilterType = activeFilters[q]["fieldName"];
+			var currentFilterValue = activeFilters[q]["filterValue"]; //the value of the filter selection
+			var featureValue = data[i][currentFilterType];
+			//if (typeof(currentFilterValue) == "string") {
+						//currentFilterValue = currentFilterValue.toUpperCase();  //this allows non-case sensitive search for text inputs....could add a conditional to only do this if the filter's class = search-box....
+			//}
+			if (featureValue != null) { //if the featureValue is not null
+				//if it is a date...do this
+				if (activeFilters[q]["filterType"] == "date") { //if the filter is a date filter
+					if (activeFilters[q]["dateSelctionType"] == "after") { //if the selector is set to after
+						if (featureValue > currentFilterValue){ //if the current feature value is larger (i.e. more recent) than the filter value
+							keepTruckin = true; //keep truckin'
 						}
-						// otherwise if the feature value is not a number
-						else if (isNaN(featureValue) == true) {
-							if (featureValue.indexOf(currentFilterValue) >= 0) { //if the filterValue is in the featureValue (this means partial search included)
-								keepTruckin = true;
-							}
-							else { //if filterValue is not in the FeatureValue, don't keep truckin and break out of loop
-								keepTruckin = false;
-								break;
-							}
-						}
-						else if (isNaN(featureValue) == false) { //if the feature value is a number
-							if (featureValue == currentFilterValue) {//if the feature and filter values are the same
-								keepTruckin = true;
-							}
-							else {
-								keepTruckin = false;
-								break;
-							}
-						}
-
-						else { //if featureValue is null, don't keep truckin and break out of loop
+						else {
 							keepTruckin = false;
-							break; 
+							break;
 						}
 					}
-				}//end apply filter for statement
-				if (keepTruckin == true) {
-						featureProperties.features.push(feature);	
-						return true; //if  the feature makes it here, the feature meets all filter criteria, so include it
-				} else { return false; }
-			},//end filter
-			onEachFeature: function (feature, layer) { //generate popups and labels
-				//get latLon for google streetview
-				lon = String(feature.geometry.coordinates[0])  //grab the geometry, not the property, which has a variable spatial reference
-				lon = lon.substring(0,9)
-				lat = String(feature.geometry.coordinates[1]) 
-				lat = lat.substring(0,8)
-				//generate popup
-				layer.bindPopup("<div style='font-size: larger'><b>" + feature.properties.Location + "</b></div><b> Case #: </b>" + feature.properties.Case_Number + "</br><b> District: </b>" + feature.properties.District + "</br> <b>Inspector: </b>" + feature.properties.Officer +  "</br><b> Violation: </b>" + feature.properties.Primary_Reported_Violation + "</br></br><img src='https://maps.googleapis.com/maps/api/streetview?size=250x250&location=" + lat + "," + lon + "'/>");
-				//generate label
-				layer.bindLabel("<b>" + feature.properties.Location + "</b>");
+					else {
+						if (activeFilters[q]["dateSelctionType"] == "before") { //if the selector is set to before
+							if (featureValue < currentFilterValue){ //if the current feature value is larger (i.e. more recent) than the filter value
+								keepTruckin = true; //keep truckin'
+							} else {
+								keepTruckin = false;
+								break;
+							}
+						}
+					}
+				}
+				// otherwise if the feature value is not a number
+				else if (isNaN(featureValue) == true) {
+					if (featureValue.indexOf(currentFilterValue) >= 0) { //if the filterValue is in the featureValue (this means partial search included)
+						
+						keepTruckin = true;
+					}
+					else { //if filterValue is not in the FeatureValue, don't keep truckin and break out of loop
+						keepTruckin = false;
+						break;
+					}
+				}
+				else if (isNaN(featureValue) == false) { //if the feature value is a number
+					if (featureValue == currentFilterValue) {//if the feature and filter values are the same
+						keepTruckin = true;
+					}
+					else {
+						keepTruckin = false;
+						break;
+					}
+				}
+				else { //if featureValue is null, don't keep truckin and break out of loop
+					keepTruckin = false;
+					break; 
+				}
 			}
-	}); //end amandaFeatures
-	markers.addLayer(amandaFeatures); //add new layer to marker layer
-	markers.addTo(map);	//add marker layer to map
-	updateLayerControls();
-}  //end createAmandaFeatures
+		} //end filter for
+		if (keepTruckin == true) { //create feature, add to marker, and add to currentData object
+			filteredData.push(data[i])
+		}
+	} //end data iteration
+	createMarkerLayer(filteredData);
+	zoomToExtent();
+}  //end filterAmandaFeatures
 
 function updateLayerControls(){
 	//remove 'old' layer controls
@@ -408,9 +393,9 @@ function updateLayerControls(){
 	controlLayers = L.control.layers(baseMaps, infoLayers);
 	controlLayers.addTo(map);
 	if (applyRemove == 1) {
-		getUniques(featureProperties); //read new subset of features and update menus
+		getUniques(filteredData); //read new subset of features and update menus
 	} else {
-		getUniques(json) //read the original feature data and update menus
+		getUniques(data) //read the original feature data and update menus
 	}
 }//end updateControlLayers
 
@@ -421,48 +406,34 @@ function zoomToExtent() {
 }//end zoomToExtent
 
 function getUniques(jsonObj){ //get uniqe values from JSON to generate drop-down menus // happens once at page load
-	//reset contents of unique value lists
-	districtList = [];
-	zoneList = [];
-	inspectorList = [];
-	statusList = [];
-	violationList = [];
-	priorityList = [];
-	caseList = [];
-	locationList = [],
-	dateUpdated = [],
-	openDate = [];
-
-	filterArray = [districtList, zoneList, inspectorList, statusList, violationList, priorityList, caseList, locationList, dateUpdated, openDate]; //reset array subsets ...this is for dynamic menu updating
-	
 	console.log("Get unique values from JSON");
-	for (var i = 0; i < jsonObj.features.length; i++) {  //for every single feature
-		for (var q = 0; q < filterList.length; q++){ //for every kind of filter 
-			var checkValue = jsonObj.features[i].properties[filterList[q]] //get the value for that filter from the json data
-			if (checkValue) {  //if checkValue is not null
-				if ($.inArray(checkValue, filterArray[q]) < 0) { //check if the value exists in the corresponding filter array
-					filterArray[q].push(checkValue); //and add it if it doesn't exist
-				}
-			}
-			filterArray[q].sort(); //after all values have been added to that filter array, sort it.
+	for (var q = 0; q < filterList.length; q++){ //for every kind of filter 
+		//reset contents of unique value lists
+		filterList[q]["uniqueValues"] = [];
+		var flags = [], l = data.length, i;
+		for( i=0; i<l; i++) {
+			if( flags[data[i][filterList[q]["fieldName"]]]) continue;
+			flags[data[i][filterList[q]["fieldName"]]] = true;
+			filterList[q]["uniqueValues"].push(data[i][filterList[q]["fieldName"]]);
 		}
+		filterList[q]["uniqueValues"].sort(); //after all values have been added to that filter array, sort it.
 	}
 	updateMenus();
-	activateAutocomplete(); //once all the uniques have been populated to the filterArray, you can run the autocomplete function
+	activateAutocomplete(); //once all the uniques have been captured, you can run the autocomplete function
 } //end getUnqiues function
 
 function updateMenus() {
 	for (var q = 0; q < filterList.length; q++){ //for every kind of filter 
-		var list = $("#" + filterList[q]); //select that filter's select menu
+		var list = $("#" + filterList[q]["fieldName"]); //select that filter's select menu
 		list.find('option').remove().end() //remove any already-existing menu opt
-		list.append($("<option></option>").attr("value", "").text(filterList[q]));  //add menu option title as topmost option
+		list.append($("<option></option>").attr("value", "").text(filterList[q]["filterName"]));  //add menu option title as topmost option
 		
-		$.each(filterArray[q], function(index, value) {  //and add all the unique options from the filterArray
+		$.each(filterList[q]["uniqueValues"], function(index, value) {  //and add all the unique options from the filters object
 			list.append($("<option></option>").attr("value", value).text(value));
 		});
 		
 		for (var z = 0; z < activeFilters.length; z++) { //for all of the active filters
-			if (activeFilters[z].indexOf(filterList[q]) >= 0) { //if the current filter menu is on the active filter list
+			if (activeFilters[z].indexOf(filterList[q]["fieldName"]) >= 0) { //if the current filter menu is on the active filter list
 				list.prop("selectedIndex",1)  //set the current selected option as the second (i.e., the only not-default option on the list)
 			};
 		};		
@@ -482,14 +453,14 @@ function updateMenus() {
 			}
 			return currentText;
 		});//end text function	
-		zoomToExtent();
+		
 } //end update menus
 
-function showResults(layer){
+function showResults(jsonObj){
 	console.log("showResults")
 	$(".results").text("");
 	var count = 0;
-	for (var thing in layer._layers) {   //count features in layer
+	for (var thing in jsonObj) {   //count features in layer
 			count = count + 1;
 	}
 	$(".results").text(count + " CASES FOUND")
@@ -500,8 +471,8 @@ function showResults(layer){
 
 function highlightFilters() {  //select all active filters and change background color
 	for (var i = 0; i < activeFilters.length; i++) {
-		filter = activeFilters[i][0]
-		$('#' + filter).css("background-color", "#990000")
+		filterId = activeFilters[i][0]
+		$('#' + filterId).css("background-color", "#990000")
 	}
 } //end highlightFilters
 
@@ -509,8 +480,3 @@ function removeHighlights() { //select all filters and restore default backgroun
 	$(".filter").css("background-color", "")
 }
 
-//for debugging missing features issue...
-//var list = [], badList = [];
-//for (thing in json.features) { var checkId = json.features[thing].properties.CustomId; if (list.indexOf(checkId) < 0) { list.push(checkId);} else { badList.push(checkId)};}
-// b = 0; for (thing in json.features) { if (json.features[thing].properties.CustomId == 2959) { console.log(b);} b = b+1}
-//amandaService.query().where("CustomId >=1025" + " AND CustomId < 1050").run(function(error, featureCollection, response){ tempJson = featureCollection.features; });
