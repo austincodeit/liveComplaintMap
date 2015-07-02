@@ -314,7 +314,7 @@ function removeFilters() {
 	$('.search-box').val("")  //clear the search box values
 	$('select').prop("selectedIndex",0) //set all select menus to the first option in the drop-down  ///<<<made redundant by updateMenus() ?
 	activeFilters = []  //reset list of activeFilters - charts tab is based on this data
-	//insert function to draw layer
+	createMarkerLayer(data);
 	updateLayerControls();  //refresh layer controls
 	removeHighlights();
 	removeLoader();
@@ -485,3 +485,4 @@ function highlightFilters() {  //select all active filters and change background
 function removeHighlights() { //select all filters and restore default background color
 	$(".filter").css("background-color", "")
 }
+
