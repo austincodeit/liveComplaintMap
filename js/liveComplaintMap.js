@@ -223,6 +223,7 @@ function sideBar(){
 }
 
 function initializeLayers() {
+	L.Icon.Default.imagePath = './images';
 	districtLayer = L.geoJson(districtLines, {
 									style: codeDistrictLayerStyle,
 									onEachFeature: function (feature, layer) {
@@ -238,8 +239,13 @@ function createMarkerLayer(jsonObj){
 		if (jsonObj[i].latitude) {
 			var lat = jsonObj[i].latitude;
 			var lon = jsonObj[i].longitude;
-			var caseId = jsonObj[i].case_id
-			var marker = new L.marker([lat, lon]).bindPopup(caseId);
+			var caseId = jsonObj[i].case_id;
+			var house_number = jsonObj[i].house_number;
+			var street_name = jsonObj[i].street_name;
+			var officer = jsonObj[i].case_manager;
+			var violation = jsonObj[i].description;
+			var popup = "<div style='font-size: larger'><b>" + house_number + street_name + "</b></div><b> Case #: </b>" + caseId + "</br><b>Inspector: </b>" + officer +  "</br><b> Violation: </b>" + violation + "</br></br><img src='https://maps.googleapis.com/maps/api/streetview?size=250x250&location=" + lat + "," + lon + "'/>"
+			var marker = new L.marker([lat, lon]).bindPopup(popup);
 		}
 		markers.addLayer(marker);
 		if (i==jsonObj.length-1) {
@@ -479,4 +485,3 @@ function highlightFilters() {  //select all active filters and change background
 function removeHighlights() { //select all filters and restore default background color
 	$(".filter").css("background-color", "")
 }
-
